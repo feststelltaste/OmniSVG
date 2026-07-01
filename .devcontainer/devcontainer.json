@@ -1,0 +1,64 @@
+{
+  "name": "OmniSVG",
+  "build": {
+    "dockerfile": "Dockerfile",
+    // Build context is the workspace root so COPY requirements.txt works.
+    "context": ".."
+  },
+
+  // ── Runtime flags ──────────────────────────────────────────────────────────
+  // --gpus=all          expose all NVIDIA GPUs (requires NVIDIA Container Toolkit)
+  // --shm-size=8g       shared memory for PyTorch tensors (avoids SIGBUS under load)
+  // --security-opt      prevent any process from gaining new privileges
+  "runArgs": [
+    "--gpus=all",
+    "--shm-size=8g",
+    "--security-opt=no-new-privileges:true"
+  ],
+
+  // ── Environment variables ──────────────────────────────────────────────────
+  // HF_TOKEN is read from the host shell / .env (never hard-coded here).
+  // Set it on your host:  export HF_TOKEN=hf_...
+  "containerEnv": {
+    "PYTHONPATH": "/workspace",
+    "TOKENIZERS_PARALLELISM": "false",
+    // Keep Hugging Face model cache inside the workspace so it survives
+    // container rebuilds.  .cache/ is already git-ignored at the repo root.
+    "HF_HOME": "/workspace/.cache/huggingface",
+    "HF_TOKEN": "${localEnv:HF_TOKEN}"
+  },
+
+  // ── Ports ──────────────────────────────────────────────────────────────────
+  "forwardPorts": [7860],
+  "portsAttributes": {
+    "7860": {
+      "label": "Gradio UI",
+      "onAutoForward": "notify"
+    }
+  },
+
+  // ── User & workspace ───────────────────────────────────────────────────────
+  "remoteUser": "vscode",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  "workspaceFolder": "/workspace",
+
+  // ── Post-create hook ───────────────────────────────────────────────────────
+  "postCreateCommand": "bash /workspace/.devcontainer/post-install.sh",
+
+  // ── VS Code customizations ─────────────────────────────────────────────────
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-toolsai.jupyter"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/opt/venv/bin/python",
+        "python.terminal.activateEnvironment": false,
+        "editor.formatOnSave": false,
+        "terminal.integrated.defaultProfile.linux": "bash"
+      }
+    }
+  }
+}
