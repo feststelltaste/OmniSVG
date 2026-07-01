@@ -56,6 +56,11 @@ coverage/
 *.seed
 *.pid.lock
 
+# Model weights and HuggingFace cache (large binary files)
+models/*
+!models/.gitkeep
+.cache/
+
 __pycache__/
 *.py[cod]
 *$py.class
